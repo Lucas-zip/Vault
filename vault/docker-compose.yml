@@ -1,0 +1,51 @@
+# ============================================
+# Vault - docker-compose
+# Sobe o PostgreSQL e a aplicação Spring Boot.
+# ============================================
+
+version: '3.8'
+
+services:
+  # ---------- Banco de dados PostgreSQL ----------
+  db:
+    image: postgres:16-alpine
+    container_name: vault-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: vault
+      POSTGRES_USER: vault
+      POSTGRES_PASSWORD: vault123
+    ports:
+      - "5432:5432"
+    volumes:
+      - vault_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vault -d vault"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------- Aplicação Spring Boot ----------
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vault-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: vault
+      DB_USER: vault
+      DB_PASSWORD: vault123
+      APP_JWT_SECRET: ${APP_JWT_SECRET:-bXVsdGlwbGUtdmF1bHQtc2VjcmV0LWp3dC1rZXktMzItY2hhcnM=}
+      APP_PORT: 8080
+    ports:
+      - "8080:8080"
+
+volumes:
+  vault_db_data:
+    driver: local

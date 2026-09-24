@@ -1,0 +1,26 @@
+# Dependências e build
+frontend/node_modules/
+frontend/dist/
+vault/target/
+
+# Ferramenta Maven local
+/maven/
+
+# Logs
+*.log
+frontend/dev-server.log
+vault/app.log
+vault/app-error.log
+vault/backend-out.log
+vault/backend-err.log
+
+# Ambiente e segredos
+.env
+.env.*
+!.env.example
+
+# IDE e sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

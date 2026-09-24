@@ -1,0 +1,13 @@
+target/
+*.class
+*.jar
+*.war
+*.log
+.idea/
+.vscode/
+*.iml
+.DS_Store
+.git/
+.gitignore
+node_modules/
+maven/

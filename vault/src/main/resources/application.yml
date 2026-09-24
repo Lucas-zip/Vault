@@ -1,0 +1,53 @@
+spring:
+  application:
+    name: vault
+
+  # Conexão com PostgreSQL (secrets via variáveis de ambiente)
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:vault}
+    username: ${DB_USERNAME:vault}
+    password: ${DB_PASSWORD:vault123}
+    driver-class-name: org.postgresql.Driver
+
+  # Schema controlado pelo Flyway (nunca deixar ddl-auto=create/update em produção)
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  jackson:
+    date-format: yyyy-MM-dd
+    time-zone: America/Sao_Paulo
+
+# Configuração do JWT (secrets via variáveis de ambiente)
+app:
+  jwt:
+    secret: ${JWT_SECRET:bXVsdGlwbGUtdmF1bHQtc2VjcmV0LWp3dC1rZXktMzItY2hhcnM=}
+    expiration: ${JWT_EXPIRATION:86400000}  # 24 horas em milissegundos
+
+# Swagger
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+
+server:
+  port: ${PORT:8080}
+
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    com.projeto.vault: DEBUG
+
+

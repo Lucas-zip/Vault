@@ -1,0 +1,28 @@
+# Configuração usada nos testes de integração (@SpringBootTest com profile teste).
+# Utiliza H2 em modo PostgreSQL para validar o mapeamento das entidades
+# sem depender de um banco PostgreSQL real rodando.
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:vaulttest;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+    show-sql: true
+  flyway:
+    enabled: false
+  sql:
+    init:
+      mode: always
+
+app:
+  jwt:
+    secret: dGVzdGUtc2VjcmV0by1qd3QtY2hhdmUtMzItY2hhcmFjdGVyZXMtYXQtbGVhc3Q=
+    expiration: 86400000

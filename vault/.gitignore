@@ -1,0 +1,42 @@
+# ============================================
+# Vault - .gitignore
+# ============================================
+
+# Java / Maven
+target/
+*.class
+*.jar
+*.war
+.mvn/
+mvnw
+mvnw.cmd
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+bin/
+
+# Ambiente e Secrets
+.env
+.env.local
+.env.*.local
+application-local.yml
+
+# Logs
+*.log
+logs/
+
+# Banco local (se usar arquivo)
+*.db
+*.sqlite
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Relatórios de teste
+test-output/

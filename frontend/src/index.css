@@ -1,0 +1,140 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import 'tailwindcss';
+
+@theme {
+  /* ===== Paleta Vault - Raycast ===== */
+  --color-background: #07080a;
+  --color-surface: #0d0d0d;
+  --color-surface-muted: #101111;
+  --color-surface-strong: #121212;
+  --color-surface-raised: #101111;
+  --color-surface-card: #121212;
+
+  --color-primary: #ffffff;
+  --color-primary-hover: #e8e8e8;
+  --color-primary-foreground: #000000;
+  --color-primary-soft: #18191a;
+
+  --color-brand: #ff6161;
+  --color-brand-soft: rgba(255, 97, 97, 0.15);
+
+  --color-accent: #57c1ff;
+  --color-accent-soft: rgba(87, 193, 255, 0.15);
+
+  --color-foreground: #f4f4f6;
+  --color-muted-fg: #cdcdcd;
+  --color-subtle-fg: #9c9c9d;
+  --color-faint: #6a6b6c;
+  --color-border: #242728;
+  --color-border-strong: rgba(255, 255, 255, 0.16);
+
+  --color-destructive: #ff6161;
+  --color-destructive-hover: #ff7979;
+  --color-destructive-soft: rgba(255, 97, 97, 0.15);
+  --color-success: #59d499;
+  --color-success-soft: rgba(89, 212, 153, 0.15);
+  --color-warning: #ffc533;
+  --color-warning-soft: rgba(255, 197, 51, 0.15);
+  --color-info: #57c1ff;
+  --color-info-soft: rgba(87, 193, 255, 0.15);
+  --color-ring: #57c1ff;
+
+  /* ===== Raio dos componentes ===== */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 16px;
+  --radius-2xl: 16px;
+
+  /* ===== Tipografia ===== */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Inter', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+html {
+  color-scheme: dark;
+  background-color: var(--color-background);
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  font-feature-settings: 'calt', 'kern', 'liga', 'ss03';
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+input,
+select,
+textarea {
+  letter-spacing: inherit;
+}
+
+::selection {
+  background: #17324a;
+  color: #f9f9f9;
+}
+
+/* ===== Scrollbar discreta ===== */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #272c31;
+  border: 3px solid var(--color-background);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #343b42;
+}
+
+/* ===== Estados e acessibilidade ===== */
+@utility focus-ring {
+  &:focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+}
+
+input,
+textarea,
+select,
+button {
+  font-family: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* Remove setas visuais de inputs numericos para alinhamento mais limpo */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
