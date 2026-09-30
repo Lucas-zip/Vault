@@ -10,6 +10,7 @@ import {
   Modal,
   FormError,
   ErrorState,
+  ConfirmDialog,
 } from '../components/ui';
 import { accountApi } from '../services/api';
 import type { AccountResponse, AccountType } from '../types';
@@ -36,6 +37,11 @@ export function Accounts() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [actionError, setActionError] = useState('');
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<AccountResponse | null>(
+    null
+  );
 
   async function fetchData() {
     try {
@@ -59,12 +65,19 @@ export function Accounts() {
   }, []);
 
   async function handleDelete(id: number) {
-    if (!confirm('Excluir esta conta?')) return;
+    setConfirmTarget(null);
+    setActionError('');
+    setDeletingId(id);
     try {
       await accountApi.delete(id);
       load();
-    } catch {
-      // interceptador
+    } catch (err) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? 'Não foi possível excluir a conta. Tente novamente.';
+      setActionError(message);
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -85,6 +98,8 @@ export function Accounts() {
           </Button>
         }
       />
+
+      {actionError && <FormError>{actionError}</FormError>}
 
       <section className="border-b border-border pb-6">
         <p className="text-sm text-subtle-fg">Saldo consolidado</p>
@@ -149,8 +164,9 @@ export function Accounts() {
                 {formatCurrency(acc.currentBalance)}
               </span>
                 <button
-                  onClick={() => handleDelete(acc.id)}
-                  className="text-subtle-fg hover:text-destructive hover:bg-destructive-soft transition-colors rounded-md p-2 focus-ring"
+                  onClick={() => setConfirmTarget(acc)}
+                  disabled={deletingId === acc.id}
+                  className="text-subtle-fg hover:text-destructive hover:bg-destructive-soft transition-colors rounded-md p-2 focus-ring disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label={`Excluir ${acc.name}`}
                   title="Excluir"
                 >
@@ -168,6 +184,26 @@ export function Accounts() {
             setShowForm(false);
             load();
           }}
+        />
+      )}
+
+      {confirmTarget && (
+        <ConfirmDialog
+          title="Excluir conta"
+          tone="danger"
+          confirmLabel="Excluir"
+          description={
+            <>
+              Deseja excluir a conta{' '}
+              <span className="text-foreground font-medium">
+                “{confirmTarget.name}”
+              </span>
+              ? Contas que possuem transações não podem ser excluídas.
+            </>
+          }
+          loading={deletingId === confirmTarget.id}
+          onConfirm={() => handleDelete(confirmTarget.id)}
+          onClose={() => setConfirmTarget(null)}
         />
       )}
     </div>

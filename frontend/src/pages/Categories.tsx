@@ -10,6 +10,7 @@ import {
   Modal,
   FormError,
   ErrorState,
+  ConfirmDialog,
 } from '../components/ui';
 import { categoryApi } from '../services/api';
 import type { CategoryResponse } from '../types';
@@ -20,6 +21,11 @@ export function Categories() {
   const [error, setError] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [formType, setFormType] = useState<'EXPENSE' | 'INCOME'>('EXPENSE');
+  const [actionError, setActionError] = useState('');
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<CategoryResponse | null>(
+    null
+  );
 
   async function fetchData() {
     try {
@@ -43,12 +49,19 @@ export function Categories() {
   }, []);
 
   async function handleDelete(id: number) {
-    if (!confirm('Excluir esta categoria?')) return;
+    setConfirmTarget(null);
+    setActionError('');
+    setDeletingId(id);
     try {
       await categoryApi.delete(id);
       load();
-    } catch {
-      // interceptador
+    } catch (err) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? 'Não foi possível excluir a categoria. Tente novamente.';
+      setActionError(message);
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -79,6 +92,8 @@ export function Categories() {
         }
       />
 
+      {actionError && <FormError>{actionError}</FormError>}
+
       {loading ? (
         <div className="border-t border-border pt-5">
           <LoadingRows rows={4} />
@@ -100,7 +115,8 @@ export function Categories() {
             icon={<ArrowDownRight className="w-4 h-4" aria-hidden />}
             items={expenses}
             type="EXPENSE"
-            onDelete={handleDelete}
+            onDelete={setConfirmTarget}
+            deletingId={deletingId}
             onAdd={(type) => {
               setFormType(type);
               setShowForm(true);
@@ -111,7 +127,8 @@ export function Categories() {
             icon={<ArrowUpRight className="w-4 h-4" aria-hidden />}
             items={incomes}
             type="INCOME"
-            onDelete={handleDelete}
+            onDelete={setConfirmTarget}
+            deletingId={deletingId}
             onAdd={(type) => {
               setFormType(type);
               setShowForm(true);
@@ -130,6 +147,27 @@ export function Categories() {
           }}
         />
       )}
+
+      {confirmTarget && (
+        <ConfirmDialog
+          title="Excluir categoria"
+          tone="danger"
+          confirmLabel="Excluir"
+          description={
+            <>
+              Deseja excluir a categoria{' '}
+              <span className="text-foreground font-medium">
+                “{confirmTarget.name}”
+              </span>
+              ? Categorias em uso por transações, recorrências ou orçamentos não
+              podem ser excluídas.
+            </>
+          }
+          loading={deletingId === confirmTarget.id}
+          onConfirm={() => handleDelete(confirmTarget.id)}
+          onClose={() => setConfirmTarget(null)}
+        />
+      )}
     </div>
   );
 }
@@ -140,13 +178,15 @@ function CategoryPanel({
   items,
   type,
   onDelete,
+  deletingId,
   onAdd,
 }: {
   title: string;
   icon: React.ReactNode;
   items: CategoryResponse[];
   type: 'INCOME' | 'EXPENSE';
-  onDelete: (id: number) => void;
+  onDelete: (category: CategoryResponse) => void;
+  deletingId: number | null;
   onAdd: (type: 'INCOME' | 'EXPENSE') => void;
 }) {
   return (
@@ -197,8 +237,9 @@ function CategoryPanel({
                 )}
               </div>
               <button
-                onClick={() => onDelete(c.id)}
-                className="text-subtle-fg hover:text-destructive hover:bg-destructive-soft transition-colors rounded-md p-2 focus-ring"
+                onClick={() => onDelete(c)}
+                disabled={deletingId === c.id}
+                className="text-subtle-fg hover:text-destructive hover:bg-destructive-soft transition-colors rounded-md p-2 focus-ring disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label={`Excluir ${c.name}`}
                 title="Excluir"
               >

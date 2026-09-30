@@ -11,6 +11,7 @@ import {
   Modal,
   FormError,
   ErrorState,
+  ConfirmDialog,
 } from '../components/ui';
 import { categoryApi, accountApi, transactionApi } from '../services/api';
 import type {
@@ -58,6 +59,11 @@ export function Budgets() {
   const [showForm, setShowForm] = useState(false);
   const [initialCategory, setInitialCategory] =
     useState<CategoryResponse | null>(null);
+  const [actionError, setActionError] = useState('');
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<CategoryResponse | null>(
+    null
+  );
 
   async function fetchData() {
     try {
@@ -91,17 +97,21 @@ export function Budgets() {
   }, []);
 
   async function handleDeleteCategory(category: CategoryResponse) {
-    if (!confirm(`Excluir a categoria ${category.name}?`)) return;
+    setDeleteTarget(null);
+    setActionError('');
+    setDeletingId(category.id);
     try {
       await categoryApi.delete(category.id);
       load();
     } catch (err) {
-      alert(
+      setActionError(
         getApiMessage(
           err,
           'Não foi possível excluir. Essa categoria pode estar em uso.'
         )
       );
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -154,6 +164,8 @@ export function Budgets() {
           </div>
         }
       />
+
+      {actionError && <FormError>{actionError}</FormError>}
 
       {loading ? (
         <div className="border-t border-border pt-5">
@@ -210,8 +222,9 @@ export function Budgets() {
 
               <div className="flex items-center gap-1">
                 <button
-                  onClick={() => handleDeleteCategory(category)}
-                  className="text-subtle-fg hover:text-destructive hover:bg-destructive-soft transition-colors rounded-md p-2 focus-ring"
+                  onClick={() => setDeleteTarget(category)}
+                  disabled={deletingId === category.id}
+                  className="text-subtle-fg hover:text-destructive hover:bg-destructive-soft transition-colors rounded-md p-2 focus-ring disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label={`Excluir categoria ${category.name}`}
                   title="Excluir"
                 >
@@ -253,6 +266,27 @@ export function Budgets() {
             setInitialCategory(null);
             load();
           }}
+        />
+      )}
+
+      {deleteTarget && (
+        <ConfirmDialog
+          title="Excluir categoria"
+          tone="danger"
+          confirmLabel="Excluir"
+          description={
+            <>
+              Deseja excluir a categoria{' '}
+              <span className="text-foreground font-medium">
+                “{deleteTarget.name}”
+              </span>
+              ? Categorias em uso por transações, recorrências ou orçamentos não
+              podem ser excluídas.
+            </>
+          }
+          loading={deletingId === deleteTarget.id}
+          onConfirm={() => handleDeleteCategory(deleteTarget)}
+          onClose={() => setDeleteTarget(null)}
         />
       )}
     </div>
