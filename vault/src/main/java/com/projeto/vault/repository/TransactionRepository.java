@@ -28,6 +28,54 @@ public interface TransactionRepository
     Optional<Transaction> findByIdAndUserId(Long id, Long userId);
 
     /**
+     * Conta quantas transações já foram geradas por uma recorrência.
+     *
+     * <p>Como não há FK direta entre {@link Transaction} e {@link com.projeto.vault.entity.Recurrence},
+     * a associação é feita pela marcação gravada em {@code observation}
+     * ("Gerado por recorrência #id").</p>
+     */
+    @Query("""
+            SELECT COUNT(t)
+            FROM Transaction t
+            WHERE t.user.id = :userId
+              AND t.observation LIKE CONCAT('Gerado por recorrência #', :recurrenceId, '%')
+            """)
+    long countByRecurrenceMarker(
+            @Param("userId") Long userId,
+            @Param("recurrenceId") Long recurrenceId);
+
+    /**
+     * Datas já geradas por uma recorrência (usadas para evitar duplicação).
+     *
+     * <p>Como não há FK direta entre {@link Transaction} e {@link com.projeto.vault.entity.Recurrence},
+     * a associação é feita pela marcação gravada em {@code observation}
+     * ("Gerado por recorrência #id").</p>
+     */
+    @Query("""
+            SELECT t.transactionDate
+            FROM Transaction t
+            WHERE t.user.id = :userId
+              AND t.observation LIKE CONCAT('Gerado por recorrência #', :recurrenceId, '%')
+            """)
+    List<LocalDate> findGeneratedDatesByRecurrenceMarker(
+            @Param("userId") Long userId,
+            @Param("recurrenceId") Long recurrenceId);
+
+    /**
+     * Conta quantas transações de um usuário existem em um período.
+     */
+    @Query("""
+            SELECT COUNT(t)
+            FROM Transaction t
+            WHERE t.user.id = :userId
+              AND t.transactionDate BETWEEN :start AND :end
+            """)
+    long countByUserIdAndDateBetween(
+            @Param("userId") Long userId,
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end);
+
+    /**
      * Soma de receitas (INCOME) de um usuário em um período.
      */
     @Query(""" 

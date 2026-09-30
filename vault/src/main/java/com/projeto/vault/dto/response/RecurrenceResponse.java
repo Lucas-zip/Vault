@@ -33,4 +33,7 @@ public class RecurrenceResponse {
     private Long categoryId;
     private String categoryName;
     private LocalDateTime createdAt;
+
+    /** Quantidade de transações já geradas por esta recorrência. */
+    private Long executionCount;
 }

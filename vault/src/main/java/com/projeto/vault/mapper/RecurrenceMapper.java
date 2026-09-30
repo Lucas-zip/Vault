@@ -11,6 +11,10 @@ import org.springframework.stereotype.Component;
 public class RecurrenceMapper {
 
     public RecurrenceResponse toResponse(Recurrence recurrence) {
+        return toResponse(recurrence, null);
+    }
+
+    public RecurrenceResponse toResponse(Recurrence recurrence, Long executionCount) {
         if (recurrence == null) {
             return null;
         }
@@ -28,6 +32,7 @@ public class RecurrenceMapper {
                 .categoryId(recurrence.getCategory() != null ? recurrence.getCategory().getId() : null)
                 .categoryName(recurrence.getCategory() != null ? recurrence.getCategory().getName() : null)
                 .createdAt(recurrence.getCreatedAt())
+                .executionCount(executionCount)
                 .build();
     }
 }

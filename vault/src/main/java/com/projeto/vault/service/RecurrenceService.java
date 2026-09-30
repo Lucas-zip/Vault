@@ -25,7 +25,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Serviço responsável pelas transações recorrentes.
@@ -89,24 +91,33 @@ public class RecurrenceService {
                 .build();
 
         Recurrence saved = recurrenceRepository.save(recurrence);
-        return recurrenceMapper.toResponse(saved);
+        return recurrenceMapper.toResponse(saved, 0L);
     }
 
     @Transactional(readOnly = true)
     public List<RecurrenceResponse> findAll(Long userId) {
         return recurrenceRepository.findAllByUserId(userId)
                 .stream()
-                .map(recurrenceMapper::toResponse)
+                .map(recurrence -> recurrenceMapper.toResponse(
+                        recurrence,
+                        transactionRepository.countByRecurrenceMarker(userId, recurrence.getId())))
                 .toList();
     }
 
     /**
-     * Executa a recorrência, gerando todas as transações pendentes
-     * até a data atual (ou data final, se definida).
+     * Executa a recorrência, gerando as transações pendentes até a data atual
+     * (ou data final, se definida).
+     *
+     * <p>A execução é <strong>idempotente</strong>: datas que já foram geradas
+     * por esta recorrência são ignoradas, evitando lançamentos duplicados quando
+     * o usuário executa mais de uma vez (ex.: clique duplo).</p>
      */
     @Transactional
     public List<TransactionResponse> execute(Long userId, Long recurrenceId) {
-        Recurrence recurrence = findOwnedRecurrence(userId, recurrenceId);
+        // Lock pessimista: serializa execuções concorrentes da mesma recorrência,
+        // evitando duplicação por clique duplo / chamadas simultâneas.
+        Recurrence recurrence = recurrenceRepository.findByIdAndUserIdForUpdate(recurrenceId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Recorrência não encontrada"));
 
         if (!Boolean.TRUE.equals(recurrence.getActive())) {
             throw new BusinessException("A recorrência está inativa");
@@ -131,7 +142,15 @@ public class RecurrenceService {
         List<LocalDate> dates = computeDates(recurrence.getFrequency(),
                 recurrence.getStartDate(), endDate);
 
+        // Datas já geradas anteriormente — não devem ser geradas de novo
+        Set<LocalDate> alreadyGenerated = new HashSet<>(
+                transactionRepository.findGeneratedDatesByRecurrenceMarker(userId, recurrenceId));
+
         for (LocalDate date : dates) {
+            if (alreadyGenerated.contains(date)) {
+                continue;
+            }
+
             // Gera a transação
             Transaction transaction = Transaction.builder()
                     .user(user)
@@ -155,7 +174,9 @@ public class RecurrenceService {
     @Transactional(readOnly = true)
     public RecurrenceResponse findById(Long userId, Long recurrenceId) {
         Recurrence recurrence = findOwnedRecurrence(userId, recurrenceId);
-        return recurrenceMapper.toResponse(recurrence);
+        return recurrenceMapper.toResponse(
+                recurrence,
+                transactionRepository.countByRecurrenceMarker(userId, recurrenceId));
     }
 
     @Transactional
@@ -177,7 +198,9 @@ public class RecurrenceService {
         }
 
         Recurrence saved = recurrenceRepository.save(recurrence);
-        return recurrenceMapper.toResponse(saved);
+        return recurrenceMapper.toResponse(
+                saved,
+                transactionRepository.countByRecurrenceMarker(userId, recurrenceId));
     }
 
     @Transactional

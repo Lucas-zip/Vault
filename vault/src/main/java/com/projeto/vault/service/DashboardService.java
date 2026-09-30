@@ -88,6 +88,9 @@ public class DashboardService {
         BigDecimal expense = transactionRepository
                 .sumExpenseByUserAndDateBetween(userId, start, end);
 
+        long transactionCount = transactionRepository
+                .countByUserIdAndDateBetween(userId, start, end);
+
         long pending = futureRepository.countByUserIdAndStatus(userId, FutureStatus.PENDING);
         long overdue = futureRepository.countByUserIdAndStatus(userId, FutureStatus.OVERDUE);
 
@@ -96,7 +99,7 @@ public class DashboardService {
                 .monthIncome(income)
                 .monthExpense(expense)
                 .monthResult(income.subtract(expense))
-                .transactionCount(0) // calculado abaixo por paginação, simplificado
+                .transactionCount(transactionCount)
                 .pendingCount(pending)
                 .overdueCount(overdue)
                 .build();
