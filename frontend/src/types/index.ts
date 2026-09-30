@@ -103,6 +103,14 @@ export interface CreateTransactionRequest {
   observation?: string;
 }
 
+export interface TransferRequest {
+  fromAccountId: number;
+  toAccountId: number;
+  amount: number;
+  description?: string;
+  transactionDate?: string;
+}
+
 // ===== Dashboard =====
 export interface DashboardSummaryResponse {
   totalBalance: number;
@@ -184,6 +192,7 @@ export interface RecurrenceResponse {
   categoryId: number;
   categoryName?: string;
   createdAt: string;
+  executionCount?: number;
 }
 
 export interface CreateRecurrenceRequest {
@@ -195,6 +204,18 @@ export interface CreateRecurrenceRequest {
   endDate?: string;
   accountId: number;
   categoryId: number;
+}
+
+export interface UpdateRecurrenceRequest {
+  description: string;
+  amount: number;
+  type: 'INCOME' | 'EXPENSE' | 'TRANSFER';
+  frequency: string;
+  startDate: string;
+  endDate?: string;
+  accountId: number;
+  categoryId?: number;
+  active?: boolean;
 }
 
 // ===== Transação futura =====

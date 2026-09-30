@@ -48,6 +48,9 @@ export function Dashboard() {
   const [summary, setSummary] = useState<DashboardSummaryResponse | null>(null);
   const [accounts, setAccounts] = useState<DashboardAccount[]>([]);
   const [topExpenses, setTopExpenses] = useState<TransactionResponse[]>([]);
+  const [monthTransactions, setMonthTransactions] = useState<
+    TransactionResponse[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -63,15 +66,16 @@ export function Dashboard() {
       setSummary(s.data);
       setAccounts(a.data);
       const transactions: TransactionResponse[] = t.data?.content ?? [];
+      const inCurrentMonth = transactions.filter(
+        (item) =>
+          item.transactionDate &&
+          item.transactionDate >= startDate &&
+          item.transactionDate <= endDate
+      );
+      setMonthTransactions(inCurrentMonth);
       setTopExpenses(
-        transactions
+        inCurrentMonth
           .filter((item) => item.type === 'EXPENSE')
-          .filter(
-            (item) =>
-              item.transactionDate &&
-              item.transactionDate >= startDate &&
-              item.transactionDate <= endDate
-          )
           .sort((a, b) => b.amount - a.amount)
           .slice(0, 5)
       );
@@ -131,6 +135,8 @@ export function Dashboard() {
   const monthIncome = (summary?.monthIncome ?? 0) + investmentYield;
   const monthExpense = summary?.monthExpense ?? 0;
   const monthResult = monthIncome - monthExpense;
+  const transactionCount =
+    monthTransactions.length || summary?.transactionCount || 0;
 
   return (
     <div className="space-y-8">
@@ -146,7 +152,10 @@ export function Dashboard() {
           {formatCurrency(summary?.totalBalance ?? 0)}
         </p>
         <p className="mt-3 text-sm text-subtle-fg">
-          {summary?.transactionCount ?? 0} transações registradas no mês
+          {transactionCount}{' '}
+          {transactionCount === 1
+            ? 'transação registrada no mês'
+            : 'transações registradas no mês'}
         </p>
       </section>
 

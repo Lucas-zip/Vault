@@ -77,6 +77,11 @@ export const transactionApi = {
   delete: (id: number) => api.delete(`/transactions/${id}`),
 };
 
+// ===== Transferências =====
+export const transferApi = {
+  create: (data: unknown) => api.post('/transfers', data),
+};
+
 // ===== Dashboard =====
 export const dashboardApi = {
   summary: () => api.get('/dashboard/summary'),

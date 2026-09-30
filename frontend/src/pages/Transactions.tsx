@@ -17,8 +17,9 @@ import {
   Modal,
   FormError,
   ErrorState,
+  ConfirmDialog,
 } from '../components/ui';
-import { transactionApi, accountApi, categoryApi } from '../services/api';
+import { transactionApi, transferApi, accountApi, categoryApi } from '../services/api';
 import type {
   TransactionResponse,
   AccountResponse,
@@ -35,6 +36,11 @@ export function Transactions() {
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('');
+  const [actionError, setActionError] = useState('');
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<TransactionResponse | null>(
+    null
+  );
 
   async function fetchData() {
     try {
@@ -64,12 +70,19 @@ export function Transactions() {
   }, []);
 
   async function handleDelete(id: number) {
-    if (!confirm('Excluir esta transação?')) return;
+    setConfirmTarget(null);
+    setActionError('');
+    setDeletingId(id);
     try {
       await transactionApi.delete(id);
       load();
-    } catch {
-      // interceptador
+    } catch (err) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? 'Não foi possível excluir a transação. Tente novamente.';
+      setActionError(message);
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -100,6 +113,8 @@ export function Transactions() {
           </Button>
         }
       />
+
+      {actionError && <FormError>{actionError}</FormError>}
 
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="flex-1">
@@ -197,8 +212,9 @@ export function Transactions() {
                 </span>
 
                 <button
-                  onClick={() => handleDelete(t.id)}
-                  className="text-subtle-fg hover:text-destructive hover:bg-destructive-soft transition-colors rounded-md p-2 focus-ring"
+                  onClick={() => setConfirmTarget(t)}
+                  disabled={deletingId === t.id}
+                  className="text-subtle-fg hover:text-destructive hover:bg-destructive-soft transition-colors rounded-md p-2 focus-ring disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label={`Excluir ${t.description || 'transação'}`}
                   title="Excluir"
                 >
@@ -219,6 +235,30 @@ export function Transactions() {
             setShowForm(false);
             load();
           }}
+        />
+      )}
+
+      {confirmTarget && (
+        <ConfirmDialog
+          title="Excluir transação"
+          tone="danger"
+          confirmLabel="Excluir"
+          description={
+            <>
+              Deseja excluir{' '}
+              <span className="text-foreground font-medium">
+                “{confirmTarget.description || confirmTarget.categoryName || 'esta transação'}”
+              </span>
+              ? O impacto no saldo da conta{' '}
+              <span className="text-foreground font-medium">
+                {confirmTarget.accountName}
+              </span>{' '}
+              será revertido.
+            </>
+          }
+          loading={deletingId === confirmTarget.id}
+          onConfirm={() => handleDelete(confirmTarget.id)}
+          onClose={() => setConfirmTarget(null)}
         />
       )}
     </div>
@@ -242,6 +282,7 @@ function TransactionForm({
     type: 'EXPENSE',
     transactionDate: new Date().toISOString().slice(0, 10),
     accountId: '',
+    toAccountId: '',
     categoryId: '',
     observation: '',
   });
@@ -275,18 +316,38 @@ function TransactionForm({
       setError('Selecione uma conta.');
       return;
     }
+    if (form.type === 'TRANSFER') {
+      if (!form.toAccountId) {
+        setError('Selecione a conta de destino.');
+        return;
+      }
+      if (form.accountId === form.toAccountId) {
+        setError('As contas de origem e destino devem ser diferentes.');
+        return;
+      }
+    }
 
     setSaving(true);
     try {
-      await transactionApi.create({
-        description: form.description.trim() || undefined,
-        amount,
-        type: form.type,
-        transactionDate: form.transactionDate || undefined,
-        accountId: Number(form.accountId),
-        categoryId: form.categoryId ? Number(form.categoryId) : undefined,
-        observation: form.observation.trim() || undefined,
-      });
+      if (form.type === 'TRANSFER') {
+        await transferApi.create({
+          fromAccountId: Number(form.accountId),
+          toAccountId: Number(form.toAccountId),
+          amount,
+          description: form.description.trim() || undefined,
+          transactionDate: form.transactionDate || undefined,
+        });
+      } else {
+        await transactionApi.create({
+          description: form.description.trim() || undefined,
+          amount,
+          type: form.type,
+          transactionDate: form.transactionDate || undefined,
+          accountId: Number(form.accountId),
+          categoryId: form.categoryId ? Number(form.categoryId) : undefined,
+          observation: form.observation.trim() || undefined,
+        });
+      }
       onSaved();
     } catch {
       setError('Não foi possível salvar a transação.');
@@ -347,7 +408,7 @@ function TransactionForm({
           />
         </div>
         <Select
-          label="Conta"
+          label={form.type === 'TRANSFER' ? 'Conta de origem' : 'Conta'}
           value={form.accountId}
           onChange={(e) => updateField('accountId', e.target.value)}
           required
@@ -359,18 +420,37 @@ function TransactionForm({
             </option>
           ))}
         </Select>
-        <Select
-          label={form.type === 'INCOME' ? 'Categoria (receita)' : 'Categoria (despesa)'}
-          value={form.categoryId}
-          onChange={(e) => updateField('categoryId', e.target.value)}
-        >
-          <option value="">Sem categoria</option>
-          {catOptions.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </Select>
+        {form.type === 'TRANSFER' && (
+          <Select
+            label="Conta de destino"
+            value={form.toAccountId}
+            onChange={(e) => updateField('toAccountId', e.target.value)}
+            required
+          >
+            <option value="">Selecione a conta</option>
+            {accounts
+              .filter((a) => a.id !== Number(form.accountId))
+              .map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
+              ))}
+          </Select>
+        )}
+        {form.type !== 'TRANSFER' && (
+          <Select
+            label={form.type === 'INCOME' ? 'Categoria (receita)' : 'Categoria (despesa)'}
+            value={form.categoryId}
+            onChange={(e) => updateField('categoryId', e.target.value)}
+          >
+            <option value="">Sem categoria</option>
+            {catOptions.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </Select>
+        )}
         <Input
           label="Observação"
           value={form.observation}
