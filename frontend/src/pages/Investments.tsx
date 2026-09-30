@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react';
-import { Plus, TrendingUp, Trash2, WalletCards } from 'lucide-react';
+import { Calculator, Plus, TrendingUp, Trash2, WalletCards } from 'lucide-react';
 import {
   Button,
   Input,
@@ -7,6 +7,7 @@ import {
   PageHeader,
   Modal,
   FormError,
+  ConfirmDialog,
 } from '../components/ui';
 import {
   calculateMonthlyYield,
@@ -14,6 +15,7 @@ import {
   calculateTotalMonthlyYield,
   getInvestments,
   saveInvestments,
+  simulateInvestment,
   type Investment,
 } from '../utils/investments';
 import { formatCurrency } from '../utils/format';
@@ -24,6 +26,8 @@ export function Investments() {
   );
   const [showCreate, setShowCreate] = useState(false);
   const [investTarget, setInvestTarget] = useState<Investment | null>(null);
+  const [simulateTarget, setSimulateTarget] = useState<Investment | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<Investment | null>(null);
 
   function persist(next: Investment[]) {
     setInvestments(next);
@@ -52,9 +56,7 @@ export function Investments() {
   }
 
   function handleDelete(id: string) {
-    const investment = investments.find((item) => item.id === id);
-    if (!investment) return;
-    if (!confirm(`Excluir o investimento ${investment.name}?`)) return;
+    setConfirmTarget(null);
     persist(investments.filter((item) => item.id !== id));
   }
 
@@ -117,7 +119,7 @@ export function Investments() {
             return (
               <div
                 key={investment.id}
-                className="flex flex-col sm:flex-row sm:items-center gap-4 py-4"
+                className="flex flex-col lg:flex-row lg:items-center gap-4 py-4"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <span className="p-2 rounded-md bg-success-soft text-success">
@@ -133,7 +135,7 @@ export function Investments() {
                   </div>
                 </div>
 
-                <div className="flex-1 grid grid-cols-2 sm:grid-cols-2 gap-3 sm:max-w-xs">
+                <div className="flex-1 grid grid-cols-2 gap-3 lg:max-w-xs">
                   <div>
                     <p className="text-xs text-subtle-fg">Investido</p>
                     <p className="mt-1 font-mono text-sm font-medium tabular-nums text-foreground">
@@ -148,7 +150,14 @@ export function Investments() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 flex-wrap">
+                  <Button
+                    variant="outline"
+                    onClick={() => setSimulateTarget(investment)}
+                  >
+                    <Calculator className="w-4 h-4" aria-hidden />
+                    Simular
+                  </Button>
                   <Button
                     variant="secondary"
                     onClick={() => setInvestTarget(investment)}
@@ -157,7 +166,7 @@ export function Investments() {
                     Investir
                   </Button>
                   <button
-                    onClick={() => handleDelete(investment.id)}
+                    onClick={() => setConfirmTarget(investment)}
                     className="text-subtle-fg hover:text-destructive hover:bg-destructive-soft transition-colors rounded-md p-2 focus-ring"
                     aria-label={`Excluir ${investment.name}`}
                     title="Excluir"
@@ -183,6 +192,32 @@ export function Investments() {
           investment={investTarget}
           onClose={() => setInvestTarget(null)}
           onInvest={handleInvest}
+        />
+      )}
+
+      {simulateTarget && (
+        <SimulateModal
+          investment={simulateTarget}
+          onClose={() => setSimulateTarget(null)}
+        />
+      )}
+
+      {confirmTarget && (
+        <ConfirmDialog
+          title="Excluir investimento"
+          tone="danger"
+          confirmLabel="Excluir"
+          description={
+            <>
+              Deseja excluir o investimento{' '}
+              <span className="text-foreground font-medium">
+                “{confirmTarget.name}”
+              </span>
+              ? Esta ação não pode ser desfeita.
+            </>
+          }
+          onConfirm={() => handleDelete(confirmTarget.id)}
+          onClose={() => setConfirmTarget(null)}
         />
       )}
     </div>
@@ -337,6 +372,102 @@ function InvestModal({
           </Button>
         </div>
       </form>
+    </Modal>
+  );
+}
+
+function SimulateModal({
+  investment,
+  onClose,
+}: {
+  investment: Investment;
+  onClose: () => void;
+}) {
+  const [amount, setAmount] = useState('');
+
+  const parsedAmount = (() => {
+    const value = parseFloat(amount.replace(',', '.'));
+    return Number.isFinite(value) && value > 0 ? value : 0;
+  })();
+
+  const simulation = useMemo(
+    () => simulateInvestment(investment, parsedAmount),
+    [investment, parsedAmount]
+  );
+
+  const hasAmount = parsedAmount > 0;
+
+  return (
+    <Modal
+      title={`Simular investimento — ${investment.name}`}
+      description={`Rentabilidade de ${investment.monthlyRate}% ao mês`}
+      onClose={onClose}
+      className="max-w-md"
+    >
+      <div className="px-5 pb-5 pt-3 space-y-4">
+        <Input
+          label="Quanto você pretende investir?"
+          type="number"
+          step="0.01"
+          min="0"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          placeholder="0,00"
+          hint={`Você já tem ${formatCurrency(investment.amount)} investido.`}
+          autoFocus
+        />
+
+        <div className="rounded-md border border-border bg-surface-raised divide-y divide-border">
+          <div className="flex items-center justify-between gap-4 px-4 py-3">
+            <span className="text-sm text-muted-fg">Já investido</span>
+            <span className="font-mono text-sm font-medium tabular-nums text-foreground">
+              {formatCurrency(simulation.currentAmount)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-4 px-4 py-3">
+            <span className="text-sm text-muted-fg">Novo aporte</span>
+            <span className="font-mono text-sm font-medium tabular-nums text-foreground">
+              + {formatCurrency(simulation.newAmount)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-4 px-4 py-3 bg-surface-strong">
+            <span className="text-sm font-medium text-foreground">
+              Total investido
+            </span>
+            <span className="font-mono text-base font-medium tabular-nums text-foreground">
+              {formatCurrency(simulation.totalAmount)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-4 px-4 py-3">
+            <span className="text-sm text-muted-fg">
+              Rendimento mensal do aporte
+            </span>
+            <span className="font-mono text-sm font-medium tabular-nums text-success">
+              + {formatCurrency(simulation.newMonthlyYield)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-4 px-4 py-3">
+            <span className="text-sm font-medium text-foreground">
+              Rendimento mensal total
+            </span>
+            <span className="font-mono text-base font-medium tabular-nums text-success">
+              + {formatCurrency(simulation.totalMonthlyYield)}
+            </span>
+          </div>
+        </div>
+
+        {!hasAmount && (
+          <p className="text-xs text-subtle-fg">
+            Informe um valor para ver a simulação do rendimento.
+          </p>
+        )}
+
+        <div className="flex pt-1">
+          <Button type="button" variant="ghost" fullWidth onClick={onClose}>
+            Fechar
+          </Button>
+        </div>
+      </div>
     </Modal>
   );
 }

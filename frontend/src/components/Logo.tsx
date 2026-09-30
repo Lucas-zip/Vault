@@ -1,4 +1,4 @@
-import { LockKeyhole } from 'lucide-react';
+import { DollarSign } from 'lucide-react';
 
 interface LogoProps {
   size?: 'sm' | 'md' | 'lg';
@@ -30,7 +30,7 @@ export function Logo({ size = 'md', showText = true }: LogoProps) {
         className={`${sizeMap[size]} relative inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground`}
         aria-hidden
       >
-        <LockKeyhole className={iconMap[size]} strokeWidth={2} />
+        <DollarSign className={iconMap[size]} strokeWidth={2.5} />
       </span>
       {showText && (
         <span

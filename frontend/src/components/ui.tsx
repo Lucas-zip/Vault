@@ -8,7 +8,7 @@ import {
   type ReactNode,
   type SelectHTMLAttributes,
 } from 'react';
-import { Loader2, X, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Loader2, X, AlertCircle, AlertTriangle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 
 // ===== Card =====
 export function Card({
@@ -467,5 +467,96 @@ export function Modal({
         {children}
       </div>
     </div>
+  );
+}
+
+// ===== Confirm dialog =====
+type ConfirmTone = 'default' | 'danger' | 'warning' | 'success';
+
+const confirmToneStyles: Record<
+  ConfirmTone,
+  { icon: ReactNode; badge: string; confirmVariant: ButtonVariant }
+> = {
+  default: {
+    icon: <AlertCircle className="w-5 h-5" aria-hidden />,
+    badge: 'bg-accent-soft text-accent',
+    confirmVariant: 'primary',
+  },
+  danger: {
+    icon: <AlertTriangle className="w-5 h-5" aria-hidden />,
+    badge: 'bg-destructive-soft text-destructive',
+    confirmVariant: 'danger',
+  },
+  warning: {
+    icon: <AlertTriangle className="w-5 h-5" aria-hidden />,
+    badge: 'bg-warning-soft text-warning',
+    confirmVariant: 'primary',
+  },
+  success: {
+    icon: <CheckCircle2 className="w-5 h-5" aria-hidden />,
+    badge: 'bg-success-soft text-success',
+    confirmVariant: 'primary',
+  },
+};
+
+export function ConfirmDialog({
+  title,
+  description,
+  confirmLabel = 'Confirmar',
+  cancelLabel = 'Cancelar',
+  tone = 'default',
+  loading = false,
+  onConfirm,
+  onClose,
+}: {
+  title: string;
+  description?: ReactNode;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  tone?: ConfirmTone;
+  loading?: boolean;
+  onConfirm: () => void;
+  onClose: () => void;
+}) {
+  const styles = confirmToneStyles[tone];
+
+  return (
+    <Modal title={title} onClose={onClose} className="max-w-md">
+      <div className="px-5 pb-5 pt-1 space-y-4">
+        {description && (
+          <div className="flex items-start gap-3">
+            <span
+              className={`shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-md ${styles.badge}`}
+            >
+              {styles.icon}
+            </span>
+            <div className="text-sm text-muted-fg leading-relaxed pt-0.5">
+              {description}
+            </div>
+          </div>
+        )}
+
+        <div className="flex gap-3 pt-1">
+          <Button
+            type="button"
+            variant="ghost"
+            fullWidth
+            onClick={onClose}
+            disabled={loading}
+          >
+            {cancelLabel}
+          </Button>
+          <Button
+            type="button"
+            variant={styles.confirmVariant}
+            fullWidth
+            loading={loading}
+            onClick={onConfirm}
+          >
+            {confirmLabel}
+          </Button>
+        </div>
+      </div>
+    </Modal>
   );
 }
