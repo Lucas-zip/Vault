@@ -1,32 +1,49 @@
-# React + TypeScript + Vite
+# Vault — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Aplicação web do **Vault** (controle financeiro pessoal), construída com **React + TypeScript + Vite**. Consome a API REST do backend Spring Boot.
 
-Currently, two official plugins are available:
+> Documentação geral do projeto: [`../README.md`](../README.md) · Documentação da API: [`../vault/README.md`](../vault/README.md)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Requisitos
 
-## React Compiler
+- Node.js 20+
+- Backend do Vault em execução em `http://localhost:8080`
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Como executar
 
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install      # apenas na primeira vez
+npm run dev      # http://localhost:5173
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+O Vite faz proxy de `/api` para `http://localhost:8080` (configurado em `vite.config.ts`), portanto **o backend precisa estar rodando** para que login e demais telas funcionem.
+
+## Scripts
+
+| Comando | Descrição |
+|---|---|
+| `npm run dev` | Servidor de desenvolvimento com HMR em `http://localhost:5173` |
+| `npm run build` | Checagem de tipos (`tsc -b`) e build de produção em `dist/` |
+| `npm run preview` | Serve localmente o build de produção |
+| `npm run lint` | Lint com Oxlint |
+
+## Estrutura
+
+```text
+src/
+├── components/   # Layout, componentes de UI, gráficos e painéis de metas
+├── context/      # AuthContext (token JWT no localStorage, usuário logado)
+├── pages/        # Dashboard, Transações, Contas, Categorias, Orçamentos,
+│                 # Metas, Investimentos, Recorrências, Login, Registro
+├── services/     # api.ts — cliente Axios com baseURL '/api'
+├── types/        # Tipos TypeScript do contrato da API
+└── utils/        # Formatação de valores/datas e regras auxiliares
+```
+
+## Autenticação
+
+O token JWT é guardado no `localStorage` e enviado em todas as requisições como `Authorization: Bearer <token>`. Em respostas `401`, o token é removido e o usuário é redirecionado para a tela de login.
+
+## Estilo
+
+Tailwind CSS 4 com tokens de design (`bg-background`, `text-muted-fg`, `border-border`, `text-accent`, `bg-success-soft`, `focus-ring`). Ícones de `lucide-react`.
