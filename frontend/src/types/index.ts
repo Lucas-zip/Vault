@@ -1,4 +1,4 @@
-// ===== Auth =====
+﻿// ===== Auth =====
 export interface LoginRequest {
   email: string;
   password: string;
@@ -112,6 +112,17 @@ export interface TransferRequest {
 }
 
 // ===== Dashboard =====
+/** Resumo do limite mensal total de gastos. */
+export interface MonthlyBudgetStatusResponse {
+  period: string;
+  defined: boolean;
+  limitAmount: number | null;
+  spentAmount: number | null;
+  remainingAmount: number | null;
+  percentageUsed: number | null;
+  exceeded: boolean;
+}
+
 export interface DashboardSummaryResponse {
   totalBalance: number;
   monthIncome: number;
@@ -120,6 +131,7 @@ export interface DashboardSummaryResponse {
   transactionCount: number;
   pendingCount: number;
   overdueCount: number;
+  monthlyBudget?: MonthlyBudgetStatusResponse;
 }
 
 export interface DashboardAccount {
@@ -231,4 +243,147 @@ export interface FutureTransactionResponse {
   categoryId: number;
   categoryName?: string;
   createdAt: string;
+}
+
+// ===== Metas financeiras =====
+export type GoalModality =
+  | 'TRADITIONAL'
+  | 'INVESTMENT_CALCULATOR'
+  | 'DEPOSIT_CALENDAR';
+
+export type GoalStatus = 'ACTIVE' | 'COMPLETED' | 'ARCHIVED';
+
+export type GoalMovementType = 'DEPOSIT' | 'WITHDRAWAL';
+
+export type DepositStrategy = 'FIXED' | 'INCREASING' | 'CUSTOM' | 'RANDOM';
+
+export interface GoalResponse {
+  id: number;
+  name: string;
+  description?: string;
+  targetAmount: number;
+  initialAmount: number;
+  currentAmount: number;
+  remainingAmount: number;
+  percentage: number;
+  startDate: string;
+  targetDate?: string;
+  modality: GoalModality;
+  depositStrategy?: DepositStrategy;
+  color?: string;
+  status: GoalStatus;
+  completed: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateGoalRequest {
+  name: string;
+  description?: string;
+  targetAmount: number;
+  initialAmount?: number;
+  startDate: string;
+  targetDate?: string;
+  modality: GoalModality;
+  depositStrategy?: DepositStrategy;
+  color?: string;
+}
+
+export interface UpdateGoalRequest {
+  name: string;
+  description?: string;
+  targetAmount: number;
+  startDate: string;
+  targetDate?: string;
+  modality: GoalModality;
+  depositStrategy?: DepositStrategy;
+  color?: string;
+}
+
+export interface GoalMovementResponse {
+  id: number;
+  type: GoalMovementType;
+  amount: number;
+  movementDate: string;
+  description?: string;
+  createdAt: string;
+}
+
+export interface CreateGoalMovementRequest {
+  type: GoalMovementType;
+  amount: number;
+  movementDate: string;
+  description?: string;
+}
+
+export interface GoalDepositPlanResponse {
+  id: number;
+  depositDate: string;
+  plannedAmount: number;
+  done: boolean;
+  actualAmount?: number;
+}
+
+export interface GoalSummaryResponse {
+  activeCount: number;
+  completedCount: number;
+  archivedCount: number;
+  totalSaved: number;
+  totalTargetActive: number;
+}
+
+export interface GoalSlotPlanResponse {
+  id: number;
+  slotIndex: number;
+  plannedAmount: number;
+  done: boolean;
+  actualAmount?: number;
+}
+
+export interface GenerateSlotPlanRequest {
+  slotCount: number;
+  strategy?: DepositStrategy;
+}
+
+export interface UpdateSlotRequest {
+  slotIndex: number;
+  done: boolean;
+  actualAmount?: number;
+}
+
+export interface GoalDetailResponse {
+  goal: GoalResponse;
+  movements: GoalMovementResponse[];
+  depositPlan: GoalDepositPlanResponse[];
+  slotPlan: GoalSlotPlanResponse[];
+}
+
+export interface InvestmentSimulationRequest {
+  initialAmount: number;
+  targetAmount: number;
+  monthlyContribution: number;
+  rate: number;
+  ratePeriod?: 'ANNUAL' | 'MONTHLY';
+  months?: number;
+}
+
+export interface EvolutionPoint {
+  month: number;
+  year: number;
+  invested: number;
+  interest: number;
+  balance: number;
+}
+
+export interface InvestmentSimulationResponse {
+  monthlyRate: number;
+  monthsToGoal: number;
+  yearsToGoal: number;
+  remainingMonths: number;
+  totalInvested: number;
+  totalInterest: number;
+  finalAmount: number;
+  requiredMonthlyContribution?: number;
+  evolution: EvolutionPoint[];
+  disclaimer: string;
 }

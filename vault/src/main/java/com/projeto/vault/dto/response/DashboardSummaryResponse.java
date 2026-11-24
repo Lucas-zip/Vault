@@ -25,4 +25,7 @@ public class DashboardSummaryResponse {
     private long transactionCount;
     private long pendingCount;
     private long overdueCount;
+
+    /** Resumo do limite mensal de gastos (pode ter defined = false). */
+    private MonthlyBudgetStatusResponse monthlyBudget;
 }

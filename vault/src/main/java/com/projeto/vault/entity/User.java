@@ -84,6 +84,10 @@ public class User {
     @Builder.Default
     private List<Budget> budgets = new ArrayList<>();
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<SavingsGoal> savingsGoals = new ArrayList<>();
+
     /** Define os timestamps de criação/atualização antes da persistência. */
     @PrePersist
     protected void onCreate() {

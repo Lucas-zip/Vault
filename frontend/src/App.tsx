@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+﻿import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Layout } from './components/Layout';
 import { Login } from './pages/Login';
@@ -12,6 +12,8 @@ import { BudgetDetail } from './pages/BudgetDetail';
 import { BudgetReport } from './pages/BudgetReport';
 import { Investments } from './pages/Investments';
 import { Recurrences } from './pages/Recurrences';
+import { Goals } from './pages/Goals';
+import { GoalDetail } from './pages/GoalDetail';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -24,7 +26,6 @@ function RoutesConfig() {
 
   return (
     <Routes>
-      {/* Rotas públicas */}
       <Route
         path="/login"
         element={isAuthenticated ? <Navigate to="/" replace /> : <Login />}
@@ -34,7 +35,6 @@ function RoutesConfig() {
         element={isAuthenticated ? <Navigate to="/" replace /> : <Register />}
       />
 
-      {/* Rotas protegidas */}
       <Route
         path="/"
         element={
@@ -52,9 +52,10 @@ function RoutesConfig() {
         <Route path="budgets/:categoryId" element={<BudgetDetail />} />
         <Route path="investments" element={<Investments />} />
         <Route path="recurrences" element={<Recurrences />} />
+        <Route path="goals" element={<Goals />} />
+        <Route path="goals/:id" element={<GoalDetail />} />
       </Route>
 
-      {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

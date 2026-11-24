@@ -4,6 +4,7 @@ import com.projeto.vault.dto.response.AccountBalanceResponse;
 import com.projeto.vault.dto.response.CategoryAmountResponse;
 import com.projeto.vault.dto.response.DashboardSummaryResponse;
 import com.projeto.vault.dto.response.FutureTransactionResponse;
+import com.projeto.vault.dto.response.MonthlyBudgetStatusResponse;
 import com.projeto.vault.dto.response.MonthlyEvolutionResponse;
 import com.projeto.vault.dto.response.TransactionResponse;
 import com.projeto.vault.entity.Account;
@@ -38,19 +39,22 @@ public class DashboardService {
     private final CategoryAmountMapper categoryAmountMapper;
     private final TransactionMapper transactionMapper;
     private final FutureTransactionMapper futureMapper;
+    private final MonthlyBudgetService monthlyBudgetService;
 
     public DashboardService(TransactionRepository transactionRepository,
                             AccountRepository accountRepository,
                             FutureTransactionRepository futureRepository,
                             CategoryAmountMapper categoryAmountMapper,
                             TransactionMapper transactionMapper,
-                            FutureTransactionMapper futureMapper) {
+                            FutureTransactionMapper futureMapper,
+                            MonthlyBudgetService monthlyBudgetService) {
         this.transactionRepository = transactionRepository;
         this.accountRepository = accountRepository;
         this.futureRepository = futureRepository;
         this.categoryAmountMapper = categoryAmountMapper;
         this.transactionMapper = transactionMapper;
         this.futureMapper = futureMapper;
+        this.monthlyBudgetService = monthlyBudgetService;
     }
 
     /**
@@ -94,6 +98,9 @@ public class DashboardService {
         long pending = futureRepository.countByUserIdAndStatus(userId, FutureStatus.PENDING);
         long overdue = futureRepository.countByUserIdAndStatus(userId, FutureStatus.OVERDUE);
 
+        MonthlyBudgetStatusResponse monthlyBudget =
+                monthlyBudgetService.getCurrentStatus(userId);
+
         return DashboardSummaryResponse.builder()
                 .totalBalance(totalBalance)
                 .monthIncome(income)
@@ -102,6 +109,7 @@ public class DashboardService {
                 .transactionCount(transactionCount)
                 .pendingCount(pending)
                 .overdueCount(overdue)
+                .monthlyBudget(monthlyBudget)
                 .build();
     }
 

@@ -135,4 +135,37 @@ export const futureApi = {
   overdue: () => api.get('/futures/overdue'),
 };
 
+// ===== Metas financeiras =====
+export const goalApi = {
+  list: (status?: string) =>
+    api.get('/goals', { params: status ? { status } : undefined }),
+  summary: () => api.get('/goals/summary'),
+  get: (id: number) => api.get(`/goals/${id}`),
+  create: (data: unknown) => api.post('/goals', data),
+  update: (id: number, data: unknown) => api.put(`/goals/${id}`, data),
+  delete: (id: number) => api.delete(`/goals/${id}`),
+  archive: (id: number) => api.post(`/goals/${id}/archive`),
+  addMovement: (id: number, data: unknown) =>
+    api.post(`/goals/${id}/movements`, data),
+  deleteMovement: (id: number, movementId: number) =>
+    api.delete(`/goals/${id}/movements/${movementId}`),
+  generatePlan: (id: number, data: unknown) =>
+    api.post(`/goals/${id}/deposit-plan`, data),
+  updatePlan: (id: number, data: unknown) =>
+    api.patch(`/goals/${id}/deposit-plan`, data),
+  generateSlots: (id: number, data: unknown) =>
+    api.post(`/goals/${id}/slot-plan`, data),
+  updateSlot: (id: number, data: unknown) =>
+    api.patch(`/goals/${id}/slot-plan`, data),
+  simulate: (data: unknown) => api.post('/goals/calculator', data),
+};
+
+// ===== Limite mensal de gastos =====
+export const monthlyBudgetApi = {
+  current: () => api.get('/monthly-budget'),
+  getByPeriod: (period: string) => api.get(`/monthly-budget/${period}`),
+  upsert: (data: unknown) => api.put('/monthly-budget', data),
+  remove: (period: string) => api.delete(`/monthly-budget/${period}`),
+};
+
 export { TOKEN_KEY };

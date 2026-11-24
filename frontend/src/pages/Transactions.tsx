@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import {
   Plus,
   Search,
@@ -6,6 +6,7 @@ import {
   ArrowDownRight,
   ArrowLeftRight,
   Trash2,
+  X,
 } from 'lucide-react';
 import {
   Button,
@@ -26,6 +27,12 @@ import type {
   CategoryResponse,
 } from '../types';
 import { formatCurrency, formatDate, TYPE_LABELS } from '../utils/format';
+import {
+  DateRangePicker,
+  EMPTY_DATE_FILTER,
+  isDateFilterEmpty,
+  type DateFilter,
+} from '../components/DateRangePicker';
 
 export function Transactions() {
   const [transactions, setTransactions] = useState<TransactionResponse[]>([]);
@@ -35,12 +42,26 @@ export function Transactions() {
   const [error, setError] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [dateFilter, setDateFilter] = useState<DateFilter>(EMPTY_DATE_FILTER);
   const [filterType, setFilterType] = useState('');
   const [actionError, setActionError] = useState('');
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<TransactionResponse | null>(
     null
   );
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  function openSearch() {
+    setSearchOpen(true);
+    // Foca no input após a expansão
+    requestAnimationFrame(() => searchInputRef.current?.focus());
+  }
+
+  function closeSearch() {
+    setSearch('');
+    setSearchOpen(false);
+  }
 
   async function fetchData() {
     try {
@@ -89,8 +110,8 @@ export function Transactions() {
   const filtered = useMemo(() => {
     let list = transactions;
     if (filterType) list = list.filter((t) => t.type === filterType);
-    if (search) {
-      const q = search.toLowerCase();
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
       list = list.filter(
         (t) =>
           t.description?.toLowerCase().includes(q) ||
@@ -98,8 +119,19 @@ export function Transactions() {
           t.categoryName?.toLowerCase().includes(q)
       );
     }
+    if (!isDateFilterEmpty(dateFilter)) {
+      list = list.filter((t) => {
+        if (!t.transactionDate) return false;
+        const iso = t.transactionDate.slice(0, 10);
+        if (dateFilter.mode === 'day') return iso === dateFilter.from;
+        // Período
+        if (dateFilter.from && iso < dateFilter.from) return false;
+        if (dateFilter.to && iso > dateFilter.to) return false;
+        return true;
+      });
+    }
     return list;
-  }, [transactions, filterType, search]);
+  }, [transactions, filterType, search, dateFilter]);
 
   return (
     <div className="space-y-6">
@@ -116,16 +148,55 @@ export function Transactions() {
 
       {actionError && <FormError>{actionError}</FormError>}
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="flex-1">
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por descrição, conta ou categoria"
-            icon={<Search className="w-4 h-4" />}
-            aria-label="Buscar transações"
-          />
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+        {/* Busca expansível */}
+        <div className="flex-1 min-w-[180px]">
+          {searchOpen ? (
+            <div className="relative">
+              <span
+                aria-hidden
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-subtle-fg pointer-events-none"
+              >
+                <Search className="w-4 h-4" />
+              </span>
+              <input
+                ref={searchInputRef}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') closeSearch();
+                }}
+                placeholder="Buscar por descrição, conta ou categoria"
+                aria-label="Buscar transações"
+                className="w-full h-9 rounded-md bg-surface-raised border border-border pl-10 pr-10 text-sm text-foreground placeholder:text-subtle-fg transition-colors focus:outline-none focus:ring-2 focus:ring-accent/25 focus:border-accent"
+              />
+              <button
+                type="button"
+                onClick={closeSearch}
+                aria-label="Fechar busca"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 text-subtle-fg hover:text-foreground transition-colors rounded-md p-1.5 focus-ring"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={openSearch}
+              className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-surface-raised px-3 text-sm text-muted-fg transition-colors hover:border-border-strong hover:text-foreground focus-ring"
+              aria-label="Abrir busca de transações"
+            >
+              <Search className="w-4 h-4" aria-hidden />
+              Buscar
+            </button>
+          )}
         </div>
+
+        {/* Filtro por data */}
+        <DateRangePicker value={dateFilter} onChange={setDateFilter} />
+
+        {/* Filtro por tipo */}
         <Select
           className="sm:w-48"
           value={filterType}
@@ -137,7 +208,23 @@ export function Transactions() {
           <option value="EXPENSE">Despesas</option>
           <option value="TRANSFER">Transferências</option>
         </Select>
+        </div>
       </div>
+
+      {/* Indicador de resultados quando há filtro */}
+      {(!isDateFilterEmpty(dateFilter) || search.trim() || filterType) &&
+        !loading &&
+        !error && (
+          <p className="text-xs text-subtle-fg">
+            {filtered.length}{' '}
+            {filtered.length === 1
+              ? 'transação encontrada'
+              : 'transações encontradas'}
+            {transactions.length > 0
+              ? ` de ${transactions.length}`
+              : ''}
+          </p>
+        )}
 
       <div className="border-t border-border">
         {loading ? (
@@ -152,8 +239,16 @@ export function Transactions() {
           />
         ) : filtered.length === 0 ? (
           <EmptyState
-            title="Nenhuma transação encontrada"
-            description="Cadastre sua primeira transação para começar a registrar seus lançamentos."
+            title={
+              transactions.length > 0
+                ? 'Nenhuma transação para os filtros'
+                : 'Nenhuma transação encontrada'
+            }
+            description={
+              transactions.length > 0
+                ? 'Ajuste ou limpe os filtros de busca e data para ver mais resultados.'
+                : 'Cadastre sua primeira transação para começar a registrar seus lançamentos.'
+            }
             action={
               <Button onClick={() => setShowForm(true)} variant="secondary">
                 <Plus className="w-4 h-4" aria-hidden />

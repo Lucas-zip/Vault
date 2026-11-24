@@ -13,6 +13,7 @@ import {
   PageHeader,
   Section,
 } from '../components/ui';
+import { MonthlyBudgetCard } from '../components/MonthlyBudgetCard';
 import { dashboardApi, transactionApi } from '../services/api';
 import type {
   DashboardSummaryResponse,
@@ -158,6 +159,12 @@ export function Dashboard() {
             : 'transações registradas no mês'}
         </p>
       </section>
+
+      {/* ===== Limite mensal de gastos ===== */}
+      <MonthlyBudgetCard
+        budget={summary?.monthlyBudget ?? null}
+        onChanged={load}
+      />
 
       {/* ===== Indicadores mensais ===== */}
       <div className="grid grid-cols-1 sm:grid-cols-3 border-y border-border divide-y sm:divide-y-0 sm:divide-x divide-border">

@@ -8,6 +8,7 @@ import {
   TrendingUp,
   LogOut,
   CalendarClock,
+  Flag,
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { initials } from '../utils/format';
@@ -19,6 +20,7 @@ const navItems = [
   { to: '/accounts', label: 'Contas', icon: Wallet },
   { to: '/categories', label: 'Categorias', icon: Tags },
   { to: '/budgets', label: 'Orçamentos', icon: Target },
+  { to: '/goals', label: 'Metas', icon: Flag },
   { to: '/investments', label: 'Investimentos', icon: TrendingUp },
   { to: '/recurrences', label: 'Recorrências', icon: CalendarClock },
 ];
